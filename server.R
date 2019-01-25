@@ -130,15 +130,19 @@ function(input, output, session) {
   #### "taxa_donut"
   output$taxa_donut <- renderHighchart({
     
-    plot_data <- MPA_iNat_observations[[input$mpa_map_shape_click$id]] %>%
-      dplyr::filter(!is.na(species_guess)) %>%
+    unique_species <- MPA_iNat_observations[[input$mpa_map_shape_click$id]] %>%
+      dplyr::filter(taxon.rank == "species") %>%
+      dplyr::filter(complete.cases(taxon.name)) %>%
+      dplyr::filter(!duplicated(taxon.name)) 
+    
+    plot_data <- unique_species %>%
       group_by(iconic_taxon_name) %>%
       summarize(count = n())
     
     plot_data$iconic_taxon_name[plot_data$iconic_taxon_name == "NA"] <- "Other"
     
     highchart() %>%
-      hc_title(text = paste0(length(unique(MPA_iNat_observations[[input$mpa_map_shape_click$id]]$species_guess)), " Species"),
+      hc_title(text = paste0(length(unique(unique_species$taxon.name)), " Species"),
                verticalAlign = "middle",
                margin = 20,
                style = list(color = "#144746", fontSize = "17px", fontFamily = "Helvetica", useHTML = TRUE)) %>%
