@@ -5,6 +5,7 @@
 ##### -- Server -- #####
 ########################
 
+##### -- Set things up -- #####
 ##### Load packages
 library(shiny)
 library(dplyr)
@@ -96,7 +97,7 @@ function(input, output, session) {
                                   name = "Observations", color = c(grey(0.5), "gold", "greenyellow")[1:length(unique(plot_data$quality_grade))], 
                                   innerSize = "80%") %>%
       hc_plotOptions(series = list(showInLegend = TRUE)) %>%
-      hc_legend(itemStyle = list(fontSize = "13px", fontFamily = "Helvetica"))
+      hc_legend(itemStyle = list(fontSize = "12px", fontFamily = "Helvetica"))
     
   })
   
@@ -124,7 +125,7 @@ function(input, output, session) {
                                   color = c("plum", "tomato", "deepskyblue")[1:length(unique(plot_data$type))], 
                                   innerSize = "80%") %>%
       hc_plotOptions(series = list(showInLegend = TRUE)) %>%
-      hc_legend(itemStyle = list(fontSize = "13px", fontFamily = "Helvetica"))
+      hc_legend(itemStyle = list(fontSize = "12px", fontFamily = "Helvetica"))
   })
 
   #### "taxa_donut"
@@ -195,20 +196,20 @@ function(input, output, session) {
           rangeselector = list(enabled = FALSE),
           
           rangeslider = list(type = "date", 
-                             font = list(family = "Helvetica", size = 15)
-                             ),
+                             font = list(family = "Helvetica", size = 13),
+                             bgcolor = grey(0.9)),
           
-          tickfont = list(family = "Helvetica", size = 14)
+          tickfont = list(family = "Helvetica", size = 12)
           ),
         
         yaxis = list(title = "Number of observations", 
-                     titlefont = list(family = "Helvetica", size = 16), 
-                     tickfont = list(family = "Helvetica", size = 14)
+                     titlefont = list(family = "Helvetica", size = 14), 
+                     tickfont = list(family = "Helvetica", size = 12)
                      ),
         
         legend = list(x = 0.1, 
                       y = 0.9, 
-                      font = list(family = "Helvetica", size = 14)
+                      font = list(family = "Helvetica", size = 13)
                       )
         
         )
@@ -248,15 +249,16 @@ function(input, output, session) {
             rangeselector = list(enabled = FALSE),
 
             rangeslider = list(type = "date", 
-                               font = list(family = "Helvetica", size = 15)),
+                               font = list(family = "Helvetica", size = 13),
+                               bgcolor = grey(0.9)),
             
-            tickfont = list(family = "Helvetica", size = 14)
+            tickfont = list(family = "Helvetica", size = 12)
             
           ),
           
           yaxis = list(title = "Number of species observed", 
-                       titlefont = list(family = "Helvetica", size = 16), 
-                       tickfont = list(family = "Helvetica", size = 14))
+                       titlefont = list(family = "Helvetica", size = 14), 
+                       tickfont = list(family = "Helvetica", size = 12))
           
         )
       
