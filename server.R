@@ -29,7 +29,11 @@ names(MPA_iNat_observations)[which(names(MPA_iNat_observations) == "")] <- setdi
 #### Add a field including iNat observation counts
 MPA_boundaries@data$iNat_observations_count <- NA
 MPA_boundaries@data$iNat_observations_count[match(names(MPA_iNat_observations), MPA_boundaries@data$OBJECTID)] <- as.numeric(unlist(lapply(MPA_iNat_observations, function(x) ifelse(is.null(x), 0, nrow(x)))))
-
+#### Add a taxonomic_ID field
+MPA_iNat_observations <- lapply(MPA_iNat_observations, function(x) {
+  x$taxonomic_ID <- ifelse(!(is.na(x$Phylum)), x$Phylum, ifelse(!(is.na(x$Kingdom)), x$Kingdom, ifelse(!(is.na(x$iconic_taxon_name)), x$iconic_taxon_name, NA)))
+  x
+})
 ##### Create objects
 #### Color palette for MPA polygons
 col_pal <- colorQuantile("Reds", MPA_boundaries@data$iNat_observations_count, n = 5)
@@ -135,15 +139,15 @@ function(input, output, session) {
   output$taxa_donut <- renderHighchart({
     
     unique_species <- MPA_iNat_observations[[input$mpa_map_shape_click$id]] %>%
-      dplyr::filter(taxon.rank == "species") %>%
+      dplyr::filter(taxon.rank == "species" & !is.na(taxon.rank)) %>%
       dplyr::filter(complete.cases(taxon.name)) %>%
       dplyr::filter(!duplicated(taxon.name)) 
     
     plot_data <- unique_species %>%
-      group_by(iconic_taxon_name) %>%
+      group_by(taxonomic_ID) %>%
       summarize(count = n())
     
-    plot_data$iconic_taxon_name[plot_data$iconic_taxon_name == "NA"] <- "Other"
+    plot_data$taxonomic_ID[is.na(plot_data$taxonomic_ID)] <- "Other"
     
     highchart() %>%
       hc_title(text = paste0(length(unique(unique_species$taxon.name)), " Species"),
@@ -151,7 +155,7 @@ function(input, output, session) {
                margin = 20,
                style = list(color = "#144746", fontSize = "17px", fontFamily = "Helvetica", useHTML = TRUE)) %>%
       hc_chart(type = "pie") %>%
-      hc_add_series_labels_values(labels = plot_data$iconic_taxon_name, 
+      hc_add_series_labels_values(labels = plot_data$taxonomic_ID, 
                                   dataLabels = list(style = list(fontSize = "12px", fontFamily = "Helvetica")),
                                   values = plot_data$count, 
                                   name = "Species", 
@@ -160,108 +164,106 @@ function(input, output, session) {
 
 ##### -- Temporal trends -- #####
   
+  #### "iNat_observations_plot"
   output$iNat_observations_plot <- renderPlotly({
     
     focal_mpa <- MPA_iNat_observations[[input$mpa_map_shape_click$id]]
     
     if (!is.null(focal_mpa)){
     
-    plot_dat <- data.frame(observed_on = seq(as.Date("2000/1/1"), as.Date("2018/12/31"), by = "day"))
-
-    iNat_observations_by_date <- focal_mpa %>%
-      group_by(observed_on) %>%
-      summarise(count = n(), na.rm = TRUE) %>%
-      dplyr::select(observed_on, count) %>%
-      as.data.frame()
-    
-    iNat_research_observations_by_date <- focal_mpa %>%
-      group_by(observed_on, quality_grade) %>%
-      summarise(count = n(), na.rm = TRUE) %>%
-      dplyr::filter(quality_grade == "research") %>%
-      dplyr::select(observed_on, count) %>%
-      as.data.frame()
-
-    iNat_observations_by_date$observed_on <- iNat_observations_by_date$observed_on %>% as.Date()
-    iNat_research_observations_by_date$observed_on <- iNat_research_observations_by_date$observed_on %>% as.Date() 
-    
-    plot_dat <- left_join(plot_dat, iNat_observations_by_date, by = "observed_on")
-    plot_dat <- left_join(plot_dat, iNat_research_observations_by_date, by = "observed_on")
-    names(plot_dat) <- c("date", "count_all", "count_research")
-    plot_dat$count_all[which(is.na(plot_dat$count_all))] <- 0
-    plot_dat$count_research[which(is.na(plot_dat$count_research))] <- 0
-
-    p <- plot_ly(plot_dat, x = ~date) %>%
-      add_bars(y = ~count_all, marker = list(line = list(color = 'darkblue', width = 12)), name = "all") %>%
-      add_bars(y = ~count_research, marker = list(line = list(color = 'tomato', width = 12)), name = "research grade") %>%
-      config(displayModeBar = FALSE) %>%
-      layout(
-        xaxis = list(
-          rangeselector = list(enabled = FALSE),
-          
-          rangeslider = list(type = "date", 
-                             font = list(family = "Helvetica", size = 13),
-                             bgcolor = grey(0.9)),
-          
-          tickfont = list(family = "Helvetica", size = 12)
+      iNat_research_observations_by_date <- focal_mpa %>%
+        group_by(observed_on, quality_grade) %>%
+        summarise(count = n(), na.rm = TRUE) %>%
+        dplyr::select(observed_on, quality_grade, count) %>%
+        as.data.frame()
+        
+      iNat_research_observations_by_date$observed_on <- iNat_research_observations_by_date$observed_on %>% as.Date()
+      names(iNat_research_observations_by_date)[1] <- "Date"
+      iNat_research_observations_by_date$quality_grade[iNat_research_observations_by_date$quality_grade == "research"] <- "Research grade"
+      iNat_research_observations_by_date$quality_grade[iNat_research_observations_by_date$quality_grade == "needs_id"] <- "Needs ID"
+      iNat_research_observations_by_date$quality_grade[iNat_research_observations_by_date$quality_grade == "casual"] <- "Casual"
+      
+      iNat_research_observations_by_date <- iNat_research_observations_by_date %>% dplyr::filter(!is.na(Date) & Date >= "2000-01-01" & Date <= "2018-12-31")
+      
+      p <- plot_ly(iNat_research_observations_by_date, x = ~Date) %>%
+        add_bars(y = ~count, color = ~quality_grade, marker = list(size = length(unique(plot_dat$quality_grade)), line = list(width = 12)), text= ~count, hoverinfo = 'text') %>%
+        config(displayModeBar = FALSE) %>%
+        layout(
+          xaxis = list(
+            barmode = "stack",
+            range = c(as.Date("2000-01-01"), as.Date("2018-12-31")),
+            rangeselector = list(enabled = FALSE),
+            rangeslider = list(type = "date", 
+                               font = list(family = "Helvetica", size = 13),
+                               bgcolor = grey(0.9)),
+            tickfont = list(family = "Helvetica", size = 14),
+            ticklen = 8,
+            tickcolor = "white",
+            title = ""
           ),
-        
-        yaxis = list(title = "Number of observations", 
-                     titlefont = list(family = "Helvetica", size = 14), 
-                     tickfont = list(family = "Helvetica", size = 12)
-                     ),
-        
-        legend = list(x = 0.1, 
-                      y = 0.9, 
-                      font = list(family = "Helvetica", size = 13)
-                      )
-        
+          yaxis = list(title = "Number of observations", 
+                       titlefont = list(family = "Helvetica", size = 14), 
+                       tickfont = list(family = "Helvetica", size = 14)),
+          legend = list(x = 0.1, 
+                        y = 0.9, 
+                        font = list(family = "Helvetica", size = 13)
+          )
+          
         )
-    p
+      
+      p
+      
     } 
     
     })
-  
+
+  #### "iNat_species_plot"
   output$iNat_species_plot <- renderPlotly({
     
     focal_mpa <- MPA_iNat_observations[[input$mpa_map_shape_click$id]]
     
     if (!is.null(focal_mpa)){
       
-      plot_dat <- data.frame(observed_on = seq(as.Date("2000/1/1"), as.Date("2018/12/31"), by = "day"))
-      
       iNat_species_by_date <- focal_mpa %>%
-        dplyr::select(species_guess, observed_on, quality_grade) %>%
-        dplyr::filter(quality_grade == "research") %>%
-        distinct(species_guess, observed_on, .keep_all = TRUE) %>%
-        group_by(observed_on) %>%
+        dplyr::filter(taxon.rank == "species") %>%
+        dplyr::select(taxon.name, observed_on, taxonomic_ID) %>%
+        distinct(taxon.name, observed_on, .keep_all = TRUE) %>%
+        group_by(observed_on, taxonomic_ID) %>%
         summarise(count = n(), na.rm = TRUE) %>%
-        dplyr::select(observed_on, count) %>%
+        dplyr::select(observed_on, taxonomic_ID, count) %>%
         as.data.frame()
       
       iNat_species_by_date$observed_on <- iNat_species_by_date$observed_on %>% as.Date()
-      
-      plot_dat <- left_join(plot_dat, iNat_species_by_date, by = "observed_on")
-      names(plot_dat) <- c("date", "count")
-      plot_dat$count[which(is.na(plot_dat$count))] <- 0
+      iNat_species_by_date$taxonomic_ID[which(is.na(iNat_species_by_date$taxonomic_ID))] <- "Other"
 
-      p <- plot_ly(plot_dat, x = ~date) %>%
-        add_bars(y = ~count, marker = list(line = list(color = 'darkblue', width = 12)), name = "all") %>%
+      names(iNat_species_by_date)[1] <- "Date"
+      iNat_species_by_date <- iNat_species_by_date %>% dplyr::filter(!is.na(Date) & Date >= "2000-01-01" & Date <= "2018-12-31")
+      
+      p <- plot_ly(iNat_species_by_date, x = ~Date) %>%
+        add_bars(y = ~count, color = ~taxonomic_ID, marker = list(size = length(unique(plot_dat$taxonomic_ID)), line = list(width = 12)), text= ~count, hoverinfo = 'text') %>%
         config(displayModeBar = FALSE) %>%
         layout(
           xaxis = list(
+            barmode = "stack",
+            range = c(as.Date("2000-01-01"), as.Date("2018-12-31")),
             rangeselector = list(enabled = FALSE),
-
             rangeslider = list(type = "date", 
                                font = list(family = "Helvetica", size = 13),
                                bgcolor = grey(0.9)),
             
-            tickfont = list(family = "Helvetica", size = 12)
-            
+            tickfont = list(family = "Helvetica", size = 14),
+            ticklen = 8,
+            tickcolor = "white",
+            title = ""
           ),
           
           yaxis = list(title = "Number of species observed", 
                        titlefont = list(family = "Helvetica", size = 14), 
-                       tickfont = list(family = "Helvetica", size = 12))
+                       tickfont = list(family = "Helvetica", size = 14)),
+          legend = list(y = -0.7, 
+                        font = list(family = "Helvetica", size = 13),
+                        orientation = "h"
+          )
           
         )
       

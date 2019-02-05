@@ -33,7 +33,7 @@ body<-dashboardBody(
   fluidRow(
     column(width = 6,
            box(width = NULL, solidHeader = TRUE,
-               leafletOutput("mpa_map", height = 840)      
+               leafletOutput("mpa_map", height = 900)      
            )
     ),
     column(width = 6,
@@ -44,7 +44,7 @@ body<-dashboardBody(
            fluidRow(
            tabBox(width = 12,
              # The id lets us use input$tabset1 on the server to find the current tab
-             id = "tabset1", height = 780,
+             id = "tabset1", height = 840,
              tabPanel("Overview",
                       
                       fluidRow(
@@ -69,7 +69,7 @@ body<-dashboardBody(
                                
                                plotlyOutput("iNat_observations_plot", height = 350),
                                
-                               plotlyOutput("iNat_species_plot", height = 350)
+                               plotlyOutput("iNat_species_plot", height = 390)
                                
                                
                                )
