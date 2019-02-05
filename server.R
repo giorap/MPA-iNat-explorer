@@ -20,12 +20,15 @@ library(plotly)
 
 ##### Load data
 MPA_boundaries <- readRDS("mpa_boundaries_edited.rds")
-MPA_iNat_observations <- readRDS("MPA_iNat_observations.rds")
+MPA_iNat_observations <- readRDS("MPA_iNat_observations_withTaxonomy.rds")
 names(MPA_iNat_observations) <- as.character(MPA_boundaries$OBJECTID)[match(names(MPA_iNat_observations), MPA_boundaries@data$iNat_project_name)]
+MPA_iNat_observations <- c(MPA_iNat_observations, vector("list", length(setdiff(as.character(MPA_boundaries$OBJECTID), names(MPA_iNat_observations)))))
+names(MPA_iNat_observations)[which(names(MPA_iNat_observations) == "")] <- setdiff(as.character(MPA_boundaries$OBJECTID), names(MPA_iNat_observations))
 
 ##### Edit data
 #### Add a field including iNat observation counts
-MPA_boundaries@data$iNat_observations_count <- unlist(lapply(MPA_iNat_observations, function(x) ifelse(is.null(x), 0, nrow(x))))
+MPA_boundaries@data$iNat_observations_count <- NA
+MPA_boundaries@data$iNat_observations_count[match(names(MPA_iNat_observations), MPA_boundaries@data$OBJECTID)] <- as.numeric(unlist(lapply(MPA_iNat_observations, function(x) ifelse(is.null(x), 0, nrow(x)))))
 
 ##### Create objects
 #### Color palette for MPA polygons
