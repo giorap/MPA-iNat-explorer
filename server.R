@@ -17,6 +17,8 @@ library(rinat)
 library(shinyLP)
 library(highcharter)
 library(plotly)
+library(RColorBrewer)
+library(collapsibleTree)
 
 ##### Load data
 MPA_boundaries <- readRDS("mpa_boundaries_edited.rds")
@@ -186,7 +188,7 @@ function(input, output, session) {
       iNat_research_observations_by_date <- iNat_research_observations_by_date %>% dplyr::filter(!is.na(Date) & Date >= "2000-01-01" & Date <= "2018-12-31")
       
       p <- plot_ly(iNat_research_observations_by_date, x = ~Date) %>%
-        add_bars(y = ~count, color = ~quality_grade, marker = list(size = length(unique(plot_dat$quality_grade)), line = list(width = 12)), text= ~count, hoverinfo = 'text') %>%
+        add_bars(y = ~count, color = ~quality_grade, marker = list(size = length(unique(iNat_research_observations_by_date$quality_grade)), line = list(width = 12)), text= ~count, hoverinfo = 'text') %>%
         config(displayModeBar = FALSE) %>%
         layout(
           xaxis = list(
@@ -240,7 +242,7 @@ function(input, output, session) {
       iNat_species_by_date <- iNat_species_by_date %>% dplyr::filter(!is.na(Date) & Date >= "2000-01-01" & Date <= "2018-12-31")
       
       p <- plot_ly(iNat_species_by_date, x = ~Date) %>%
-        add_bars(y = ~count, color = ~taxonomic_ID, marker = list(size = length(unique(plot_dat$taxonomic_ID)), line = list(width = 12)), text= ~count, hoverinfo = 'text') %>%
+        add_bars(y = ~count, color = ~taxonomic_ID, marker = list(size = length(unique(iNat_species_by_date$taxonomic_ID)), line = list(width = 12)), text= ~count, hoverinfo = 'text') %>%
         config(displayModeBar = FALSE) %>%
         layout(
           xaxis = list(
@@ -268,9 +270,30 @@ function(input, output, session) {
         )
       
       p
-    } 
+    }
     
   })
-
+  
+  ##### -- Taxonomic breakdown -- #####
+  
+  #### "iNat_species_plot"
+  output$taxon_tree <- renderCollapsibleTree({
+    
+    focal_mpa <- MPA_iNat_observations[[input$mpa_map_shape_click$id]]
+    
+    if (!is.null(focal_mpa)){
+      
+      plot_dat <- focal_mpa %>% dplyr::filter(taxon.rank == "species" & !is.na(taxon.rank) & quality_grade == "research") 
+        
+      collapsibleTree(
+        plot_dat,
+        hierarchy = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "taxon.name"),
+        width = "100%",
+        zoomable = FALSE
+        )
+      
+    }
+    
+  })
   
 }

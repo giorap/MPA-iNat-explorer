@@ -15,6 +15,7 @@ library(shinydashboard)
 library(DT)
 library(highcharter)
 library(plotly)
+library(collapsibleTree)
 
 header<-dashboardHeader(title="MPA iNaturalist Explorer", titleWidth = 300)
 
@@ -49,12 +50,16 @@ body<-dashboardBody(
                       
                       fluidRow(
                         column(width = 6,
-                               highchartOutput("observations_donut", height = 350)
+                               highchartOutput("observations_donut", height = 360)
                                ),
                         column(width = 6,
-                               highchartOutput("observers_donut", height = 350)
+                               highchartOutput("observers_donut", height = 360)
                         )                        
                         ),
+                      
+                      br(),
+                      
+                      br(),
 
                       fluidRow(
                         column(width = 12,
@@ -76,7 +81,20 @@ body<-dashboardBody(
                         
                         
                       )
-                  )
+                  ),
+             
+             tabPanel("Taxonomic breakdown", 
+                      
+                      fluidRow(
+                        column(width = 12, 
+                               
+                               collapsibleTreeOutput("taxon_tree", height = 750)
+                               
+                        )
+                        
+                        
+                      )
+             )             
            )
         )
     )
