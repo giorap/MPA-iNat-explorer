@@ -262,7 +262,7 @@ function(input, output, session) {
           yaxis = list(title = "Number of species observed", 
                        titlefont = list(family = "Helvetica", size = 14), 
                        tickfont = list(family = "Helvetica", size = 14)),
-          legend = list(y = -0.7, 
+          legend = list(y = -0.8, 
                         font = list(family = "Helvetica", size = 13),
                         orientation = "h"
           )
@@ -276,19 +276,24 @@ function(input, output, session) {
   
   ##### -- Taxonomic breakdown -- #####
   
-  #### "iNat_species_plot"
+  #### "taxon_tree"
   output$taxon_tree <- renderCollapsibleTree({
     
     focal_mpa <- MPA_iNat_observations[[input$mpa_map_shape_click$id]]
     
     if (!is.null(focal_mpa)){
       
-      plot_dat <- focal_mpa %>% dplyr::filter(taxon.rank == "species" & !is.na(taxon.rank) & quality_grade == "research") 
+      focal_mpa <- focal_mpa %>% dplyr::mutate(year = as.integer(substr(observed_on, 1, 4)))
+
+      Community <- focal_mpa %>% 
+        dplyr::filter(year >= input$time_range[1] & year <= input$time_range[2]) %>% 
+        dplyr::filter(taxon.rank == "species" & !is.na(taxon.rank) & quality_grade == "research") 
         
       collapsibleTree(
-        plot_dat,
+        Community,
         hierarchy = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "taxon.name"),
         width = "100%",
+        collapsed = TRUE,
         zoomable = FALSE
         )
       

@@ -5,9 +5,9 @@ account: grap
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 617379
-bundleId: 1858553
+bundleId: 1860102
 url: https://grap.shinyapps.io/MPA_iNat_Explorer/
-when: 1549413319.02099
+when: 1549477424.35034
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: .gitattributes|README.md

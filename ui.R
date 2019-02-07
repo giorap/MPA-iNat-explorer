@@ -74,6 +74,8 @@ body<-dashboardBody(
                                
                                plotlyOutput("iNat_observations_plot", height = 350),
                                
+                               br(),
+                               
                                plotlyOutput("iNat_species_plot", height = 390)
                                
                                
@@ -88,11 +90,22 @@ body<-dashboardBody(
                       fluidRow(
                         column(width = 12, 
                                
-                               collapsibleTreeOutput("taxon_tree", height = 750)
+                               collapsibleTreeOutput("taxon_tree", height = 650)
                                
                         )
                         
-                        
+                      ),
+                      
+                      fluidRow(
+                        column(width = 12, 
+                               sliderInput("time_range", "Temporal range:",
+                                           min = 2000, max = 2018,
+                                           timeFormat = TRUE,
+                                           value = c(2000, 2018), step = 1,
+                                           sep = "",
+                                           width = 900
+                               )
+                        )
                       )
              )             
            )
