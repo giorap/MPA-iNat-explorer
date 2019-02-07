@@ -23,11 +23,13 @@ library(collapsibleTree)
 ##### Load data
 MPA_boundaries <- readRDS("mpa_boundaries_edited.rds")
 MPA_iNat_observations <- readRDS("MPA_iNat_observations_withTaxonomy.rds")
+visit_predictors <- readRDS("visit_predictors.rds")
+
+##### Edit data
 names(MPA_iNat_observations) <- as.character(MPA_boundaries$OBJECTID)[match(names(MPA_iNat_observations), MPA_boundaries@data$iNat_project_name)]
 MPA_iNat_observations <- c(MPA_iNat_observations, vector("list", length(setdiff(as.character(MPA_boundaries$OBJECTID), names(MPA_iNat_observations)))))
 names(MPA_iNat_observations)[which(names(MPA_iNat_observations) == "")] <- setdiff(as.character(MPA_boundaries$OBJECTID), names(MPA_iNat_observations))
-
-##### Edit data
+visit_predictors$mpa_OBJECTID <- MPA_boundaries$OBJECTID[match(visit_predictors$mpa, MPA_boundaries$iNat_project_name)]
 #### Add a field including iNat observation counts
 MPA_boundaries@data$iNat_observations_count <- NA
 MPA_boundaries@data$iNat_observations_count[match(names(MPA_iNat_observations), MPA_boundaries@data$OBJECTID)] <- as.numeric(unlist(lapply(MPA_iNat_observations, function(x) ifelse(is.null(x), 0, nrow(x)))))
@@ -300,5 +302,103 @@ function(input, output, session) {
     }
     
   })
+  
+  ##### -- Observer behaviour -- #####
+
+  #### "visit_observations_histogram"
+  output$visit_observations_histogram <- renderPlotly({
+    
+    focal_visits <- visit_predictors %>% dplyr::filter(mpa_OBJECTID == input$mpa_map_shape_click$id)
+    
+    if (nrow(focal_visits) != 0){
+      
+      p <- plot_ly(x = focal_visits$number_observations, type = "histogram") %>%
+        config(displayModeBar = FALSE) %>%
+        layout(xaxis = list(title = "Number of observations made during observation event",
+                            titlefont = list(family = "Helvetica", size = 14),
+                            tickfont = list(family = "Helvetica", size = 14),
+                            ticklen = 8,
+                            tickcolor = "white"), 
+               yaxis = list(title = "Number of observation events",
+                            titlefont = list(family = "Helvetica", size = 14),
+                            tickfont = list(family = "Helvetica", size = 14)
+               )
+        )
+      
+    }
+    
+  }) 
+  
+  #### "visit_species_histogram"
+  output$visit_species_histogram <- renderPlotly({
+    
+    focal_visits <- visit_predictors %>% dplyr::filter(mpa_OBJECTID == input$mpa_map_shape_click$id)
+    
+    if (nrow(focal_visits) != 0){
+      
+      p <- plot_ly(x = focal_visits$number_species, type = "histogram") %>%
+        config(displayModeBar = FALSE) %>%
+        layout(xaxis = list(title = "Number of species observed during observation event",
+                            titlefont = list(family = "Helvetica", size = 14),
+                            tickfont = list(family = "Helvetica", size = 14),
+                            ticklen = 8,
+                            tickcolor = "white"), 
+               yaxis = list(title = "Number of observation events",
+                            titlefont = list(family = "Helvetica", size = 14),
+                            tickfont = list(family = "Helvetica", size = 14)
+               )
+        )
+      
+    }
+    
+  }) 
+  
+  #### "visit_time_histogram"
+  output$visit_time_histogram <- renderPlotly({
+    
+    focal_visits <- visit_predictors %>% dplyr::filter(mpa_OBJECTID == input$mpa_map_shape_click$id)
+    
+    if (nrow(focal_visits) != 0){
+      
+      p <- plot_ly(x = focal_visits$duration_min, type = "histogram") %>%
+        config(displayModeBar = FALSE) %>%
+        layout(xaxis = list(title = "Duration of observation event (minutes)",
+                            titlefont = list(family = "Helvetica", size = 14),
+                            tickfont = list(family = "Helvetica", size = 14),
+                            ticklen = 8,
+                            tickcolor = "white"), 
+               yaxis = list(title = "Number of observation events",
+               titlefont = list(family = "Helvetica", size = 14),
+               tickfont = list(family = "Helvetica", size = 14)
+               )
+        )
+    }
+    
+  })  
+  
+  #### "visit_distance_histogram"
+  output$visit_distance_histogram <- renderPlotly({
+    
+    focal_visits <- visit_predictors %>% dplyr::filter(mpa_OBJECTID == input$mpa_map_shape_click$id)
+    
+    if (nrow(focal_visits) != 0){
+      
+      p <- plot_ly(x = focal_visits$distance_travelled_m, type = "histogram") %>%
+        config(displayModeBar = FALSE) %>%
+        layout(xaxis = list(title = "Distance travelled during observation event (meters)",
+                            titlefont = list(family = "Helvetica", size = 14),
+                            tickfont = list(family = "Helvetica", size = 14),
+                            ticklen = 8,
+                            tickcolor = "white"), 
+               yaxis = list(title = "Number of observation events",
+                            titlefont = list(family = "Helvetica", size = 14),
+                            tickfont = list(family = "Helvetica", size = 14)
+               )
+        )
+      
+    }
+    
+  }) 
+  
   
 }

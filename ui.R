@@ -107,7 +107,40 @@ body<-dashboardBody(
                                )
                         )
                       )
-             )             
+             ),
+             
+             tabPanel("Observer behavior", 
+                      
+                      fluidRow(
+                        column(width = 6, 
+                               
+                               plotlyOutput("visit_observations_histogram", height = 350)
+                               
+                        ),
+                        
+                        column(width = 6, 
+                               
+                               plotlyOutput("visit_species_histogram", height = 350)
+                               
+                        )
+                        
+                      ),
+                      
+                      fluidRow(
+                        column(width = 6, 
+                               
+                               plotlyOutput("visit_time_histogram", height = 350)
+                               
+                        ),
+                        
+                        column(width = 6, 
+                               
+                               plotlyOutput("visit_distance_histogram", height = 350)
+                               
+                        )
+                        
+                      )
+             )  
            )
         )
     )
