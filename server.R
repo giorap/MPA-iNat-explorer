@@ -222,26 +222,64 @@ function(input, output, session) {
     })
 
   #### "iNat_species_plot"
+  
+  # Route select input box
+  output$select_taxon_scale <- renderUI({
+    
+    focal_mpa <- MPA_iNat_observations[[input$mpa_map_shape_click$id]]
+    
+    if (!is.null(focal_mpa)){
+    
+    selectInput("taxon_scale", "", choices = c("Higher taxa", "Most commonly observed species"), selected = "Higher taxa")
+      
+    }
+  })
+  
   output$iNat_species_plot <- renderPlotly({
     
     focal_mpa <- MPA_iNat_observations[[input$mpa_map_shape_click$id]]
     
     if (!is.null(focal_mpa)){
       
-      iNat_species_by_date <- focal_mpa %>%
-        dplyr::filter(taxon.rank == "species") %>%
-        dplyr::select(taxon.name, observed_on, taxonomic_ID) %>%
-        distinct(taxon.name, observed_on, .keep_all = TRUE) %>%
-        group_by(observed_on, taxonomic_ID) %>%
-        summarise(count = n(), na.rm = TRUE) %>%
-        dplyr::select(observed_on, taxonomic_ID, count) %>%
-        as.data.frame()
+      if (input$taxon_scale == "Most commonly observed species"){
+        focal_mpa$taxonomic_ID <- as.character(focal_mpa$taxon.name)
+        
+        iNat_species_by_date <- focal_mpa %>%
+          dplyr::filter(taxon.rank == "species") %>%
+          dplyr::select(taxon.name, observed_on, taxonomic_ID) %>%
+          group_by(observed_on, taxonomic_ID) %>%
+          summarise(count = n(), na.rm = TRUE) %>%
+          dplyr::select(observed_on, taxonomic_ID, count) %>%
+          as.data.frame()
+      } else {
+        iNat_species_by_date <- focal_mpa %>%
+          dplyr::filter(taxon.rank == "species") %>%
+          dplyr::select(taxon.name, observed_on, taxonomic_ID) %>%
+          distinct(taxon.name, observed_on, .keep_all = TRUE) %>%
+          group_by(observed_on, taxonomic_ID) %>%
+          summarise(count = n(), na.rm = TRUE) %>%
+          dplyr::select(observed_on, taxonomic_ID, count) %>%
+          as.data.frame()
+      }
       
       iNat_species_by_date$observed_on <- iNat_species_by_date$observed_on %>% as.Date()
       iNat_species_by_date$taxonomic_ID[which(is.na(iNat_species_by_date$taxonomic_ID))] <- "Other"
-
       names(iNat_species_by_date)[1] <- "Date"
       iNat_species_by_date <- iNat_species_by_date %>% dplyr::filter(!is.na(Date) & Date >= "2000-01-01" & Date <= "2018-12-31")
+      
+      iNat_species_counts <- iNat_species_by_date %>% group_by(taxonomic_ID) %>% summarise(count = n()) %>% mutate(percentage = round(count/sum(count), 2)) %>% as.data.frame()
+      
+      if (input$taxon_scale == "Most commonly observed species"){
+        
+        iNat_species_by_date <- iNat_species_by_date %>% dplyr::filter(taxonomic_ID %in% iNat_species_counts$taxonomic_ID[order(iNat_species_counts$percentage, decreasing = TRUE)][1:10])
+        
+      } else {
+        
+        iNat_species_by_date$taxonomic_ID <- paste(iNat_species_counts$taxonomic_ID[match(iNat_species_by_date$taxonomic_ID, iNat_species_counts$taxonomic_ID)], " (", 
+                                                   iNat_species_counts$percentage[match(iNat_species_by_date$taxonomic_ID, iNat_species_counts$taxonomic_ID)], "%)", sep = "")
+        iNat_species_by_date$taxonomic_ID <- factor(iNat_species_by_date$taxonomic_ID, levels = unique(sort(iNat_species_by_date$taxonomic_ID))[order(iNat_species_counts$percentage, decreasing = TRUE)])
+
+      }
       
       p <- plot_ly(iNat_species_by_date, x = ~Date) %>%
         add_bars(y = ~count, color = ~taxonomic_ID, marker = list(size = length(unique(iNat_species_by_date$taxonomic_ID)), line = list(width = 12)), text= ~count, hoverinfo = 'text') %>%
@@ -264,7 +302,7 @@ function(input, output, session) {
           yaxis = list(title = "Number of species observed", 
                        titlefont = list(family = "Helvetica", size = 14), 
                        tickfont = list(family = "Helvetica", size = 14)),
-          legend = list(y = -0.8, 
+          legend = list(y = 1.2, 
                         font = list(family = "Helvetica", size = 13),
                         orientation = "h"
           )
@@ -272,39 +310,13 @@ function(input, output, session) {
         )
       
       p
-    }
-    
-  })
-  
-  ##### -- Taxonomic breakdown -- #####
-  
-  #### "taxon_tree"
-  output$taxon_tree <- renderCollapsibleTree({
-    
-    focal_mpa <- MPA_iNat_observations[[input$mpa_map_shape_click$id]]
-    
-    if (!is.null(focal_mpa)){
-      
-      focal_mpa <- focal_mpa %>% dplyr::mutate(year = as.integer(substr(observed_on, 1, 4)))
-
-      Community <- focal_mpa %>% 
-        dplyr::filter(year >= input$time_range[1] & year <= input$time_range[2]) %>% 
-        dplyr::filter(taxon.rank == "species" & !is.na(taxon.rank) & quality_grade == "research") 
-        
-      collapsibleTree(
-        Community,
-        hierarchy = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "taxon.name"),
-        width = "100%",
-        collapsed = TRUE,
-        zoomable = FALSE
-        )
       
     }
     
   })
   
   ##### -- Observer behaviour -- #####
-
+  
   #### "visit_observations_histogram"
   output$visit_observations_histogram <- renderPlotly({
     
@@ -318,13 +330,44 @@ function(input, output, session) {
                             titlefont = list(family = "Helvetica", size = 12),
                             tickfont = list(family = "Helvetica", size = 12),
                             ticklen = 8,
-                            tickcolor = "white"), 
+                            tickcolor = "white",
+                            range = c(0, max(focal_visits$number_observations))), 
                yaxis = list(title = "Number of observation events",
                             titlefont = list(family = "Helvetica", size = 12),
                             tickfont = list(family = "Helvetica", size = 12)
                ),
                shapes = list(type = "line", y0 = 0, y1 = 1, yref = "paper", x0 = median(focal_visits$number_observations), x1 = median(focal_visits$number_observations), line = list(color = "black"), text = "median"),
                annotations = list(x = median(focal_visits$number_observations), y = 1, text = "median", ax = 40, ay = -40)
+        )
+      
+    }
+    
+  })
+  
+  #### "visit_observers_histogram"
+  output$visit_observers_histogram <- renderPlotly({
+    
+    focal_mpa <- MPA_iNat_observations[[input$mpa_map_shape_click$id]]
+    
+    if (!is.null(focal_mpa)){
+      
+      plot_data <- focal_mpa %>%
+        group_by(user_login) %>%
+        summarize(count = n())
+      
+      p <- plot_ly(x = plot_data$count, type = "histogram") %>%
+        config(displayModeBar = FALSE) %>%
+        layout(xaxis = list(title = "Number of observers",
+                            titlefont = list(family = "Helvetica", size = 12),
+                            tickfont = list(family = "Helvetica", size = 12),
+                            ticklen = 8,
+                            tickcolor = "white",
+                            range = c(0, max(plot_data$count))), 
+               yaxis = list(title = "Number of repeat visits",
+                            titlefont = list(family = "Helvetica", size = 12),
+                            tickfont = list(family = "Helvetica", size = 12)
+               ),
+               shapes = list(type = "line", y0 = 0, y1 = 1, yref = "paper", x0 = median(plot_data$count), x1 = median(plot_data$count), line = list(color = "black"), text = "median")
         )
       
     }
@@ -344,12 +387,38 @@ function(input, output, session) {
                             titlefont = list(family = "Helvetica", size = 12),
                             tickfont = list(family = "Helvetica", size = 12),
                             ticklen = 8,
-                            tickcolor = "white"), 
+                            tickcolor = "white",
+                            range = c(0, max(focal_visits$number_species))), 
                yaxis = list(title = "Number of observation events",
                             titlefont = list(family = "Helvetica", size = 12),
                             tickfont = list(family = "Helvetica", size = 12)
                ),
                shapes = list(type = "line", y0 = 0, y1 = 1, yref = "paper", x0 = median(focal_visits$number_species), x1 = median(focal_visits$number_species), line = list(color = "black"), text = "median")
+        )
+      
+    }
+    
+  }) 
+  
+  output$visit_taxonomic_breadth_histogram <- renderPlotly({
+    
+    focal_visits <- visit_predictors %>% dplyr::filter(mpa_OBJECTID == input$mpa_map_shape_click$id)
+    
+    if (nrow(focal_visits) != 0){
+      
+      p <- plot_ly(x = focal_visits$taxonomic_breadth_index, type = "histogram") %>%
+        config(displayModeBar = FALSE) %>%
+        layout(xaxis = list(title = "Taxonomic breadth of observation event (#orders/#observations)",
+                            titlefont = list(family = "Helvetica", size = 12),
+                            tickfont = list(family = "Helvetica", size = 12),
+                            ticklen = 8,
+                            tickcolor = "white",
+                            range = c(0, max(focal_visits$taxonomic_breadth_index))), 
+               yaxis = list(title = "Number of observation events",
+                            titlefont = list(family = "Helvetica", size = 12),
+                            tickfont = list(family = "Helvetica", size = 12)
+               ),
+               shapes = list(type = "line", y0 = 0, y1 = 1, yref = "paper", x0 = median(focal_visits$taxonomic_breadth_index), x1 = median(focal_visits$taxonomic_breadth_index), line = list(color = "black"), text = "median")
         )
       
     }
@@ -369,10 +438,11 @@ function(input, output, session) {
                             titlefont = list(family = "Helvetica", size = 12),
                             tickfont = list(family = "Helvetica", size = 12),
                             ticklen = 8,
-                            tickcolor = "white"), 
+                            tickcolor = "white",
+                            range = c(0, max(focal_visits$duration_min))), 
                yaxis = list(title = "Number of observation events",
-               titlefont = list(family = "Helvetica", size = 12),
-               tickfont = list(family = "Helvetica", size = 12)
+                            titlefont = list(family = "Helvetica", size = 12),
+                            tickfont = list(family = "Helvetica", size = 12)
                ),
                shapes = list(type = "line", y0 = 0, y1 = 1, yref = "paper", x0 = median(focal_visits$duration_min), x1 = median(focal_visits$duration_min), line = list(color = "black"), text = "median")
         )
@@ -404,6 +474,35 @@ function(input, output, session) {
     }
     
   }) 
+  
+  ##### -- Community composition -- #####
+  
+  #### "community_composition"
+  output$community_composition <- renderCollapsibleTree({
+    
+    focal_mpa <- MPA_iNat_observations[[input$mpa_map_shape_click$id]]
+    
+    if (!is.null(focal_mpa)){
+      
+      focal_mpa <- focal_mpa %>% dplyr::mutate(year = as.integer(substr(observed_on, 1, 4)))
+
+      Community <- focal_mpa %>% 
+        dplyr::filter(year >= input$time_range[1] & year <= input$time_range[2]) %>% 
+        dplyr::filter(taxon.rank == "species" & !is.na(taxon.rank) & quality_grade == "research") 
+        
+      collapsibleTree(
+        Community,
+        hierarchy = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "taxon.name"),
+        width = "100%",
+        collapsed = TRUE,
+        zoomable = FALSE
+        )
+      
+    }
+    
+  })
+  
+  
   
   
 }
