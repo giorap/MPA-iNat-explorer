@@ -315,14 +315,16 @@ function(input, output, session) {
       p <- plot_ly(x = focal_visits$number_observations, type = "histogram") %>%
         config(displayModeBar = FALSE) %>%
         layout(xaxis = list(title = "Number of observations made during observation event",
-                            titlefont = list(family = "Helvetica", size = 14),
-                            tickfont = list(family = "Helvetica", size = 14),
+                            titlefont = list(family = "Helvetica", size = 12),
+                            tickfont = list(family = "Helvetica", size = 12),
                             ticklen = 8,
                             tickcolor = "white"), 
                yaxis = list(title = "Number of observation events",
-                            titlefont = list(family = "Helvetica", size = 14),
-                            tickfont = list(family = "Helvetica", size = 14)
-               )
+                            titlefont = list(family = "Helvetica", size = 12),
+                            tickfont = list(family = "Helvetica", size = 12)
+               ),
+               shapes = list(type = "line", y0 = 0, y1 = 1, yref = "paper", x0 = median(focal_visits$number_observations), x1 = median(focal_visits$number_observations), line = list(color = "black"), text = "median"),
+               annotations = list(x = median(focal_visits$number_observations), y = 1, text = "median", ax = 40, ay = -40)
         )
       
     }
@@ -339,14 +341,15 @@ function(input, output, session) {
       p <- plot_ly(x = focal_visits$number_species, type = "histogram") %>%
         config(displayModeBar = FALSE) %>%
         layout(xaxis = list(title = "Number of species observed during observation event",
-                            titlefont = list(family = "Helvetica", size = 14),
-                            tickfont = list(family = "Helvetica", size = 14),
+                            titlefont = list(family = "Helvetica", size = 12),
+                            tickfont = list(family = "Helvetica", size = 12),
                             ticklen = 8,
                             tickcolor = "white"), 
                yaxis = list(title = "Number of observation events",
-                            titlefont = list(family = "Helvetica", size = 14),
-                            tickfont = list(family = "Helvetica", size = 14)
-               )
+                            titlefont = list(family = "Helvetica", size = 12),
+                            tickfont = list(family = "Helvetica", size = 12)
+               ),
+               shapes = list(type = "line", y0 = 0, y1 = 1, yref = "paper", x0 = median(focal_visits$number_species), x1 = median(focal_visits$number_species), line = list(color = "black"), text = "median")
         )
       
     }
@@ -363,14 +366,15 @@ function(input, output, session) {
       p <- plot_ly(x = focal_visits$duration_min, type = "histogram") %>%
         config(displayModeBar = FALSE) %>%
         layout(xaxis = list(title = "Duration of observation event (minutes)",
-                            titlefont = list(family = "Helvetica", size = 14),
-                            tickfont = list(family = "Helvetica", size = 14),
+                            titlefont = list(family = "Helvetica", size = 12),
+                            tickfont = list(family = "Helvetica", size = 12),
                             ticklen = 8,
                             tickcolor = "white"), 
                yaxis = list(title = "Number of observation events",
-               titlefont = list(family = "Helvetica", size = 14),
-               tickfont = list(family = "Helvetica", size = 14)
-               )
+               titlefont = list(family = "Helvetica", size = 12),
+               tickfont = list(family = "Helvetica", size = 12)
+               ),
+               shapes = list(type = "line", y0 = 0, y1 = 1, yref = "paper", x0 = median(focal_visits$duration_min), x1 = median(focal_visits$duration_min), line = list(color = "black"), text = "median")
         )
     }
     
@@ -386,16 +390,17 @@ function(input, output, session) {
       p <- plot_ly(x = focal_visits$distance_travelled_m, type = "histogram") %>%
         config(displayModeBar = FALSE) %>%
         layout(xaxis = list(title = "Distance travelled during observation event (meters)",
-                            titlefont = list(family = "Helvetica", size = 14),
-                            tickfont = list(family = "Helvetica", size = 14),
+                            titlefont = list(family = "Helvetica", size = 12),
+                            tickfont = list(family = "Helvetica", size = 12),
                             ticklen = 8,
-                            tickcolor = "white"), 
+                            tickcolor = "white",
+                            range = c(0, max(focal_visits$distance_travelled_m))), 
                yaxis = list(title = "Number of observation events",
-                            titlefont = list(family = "Helvetica", size = 14),
-                            tickfont = list(family = "Helvetica", size = 14)
-               )
+                            titlefont = list(family = "Helvetica", size = 12),
+                            tickfont = list(family = "Helvetica", size = 12)
+               ),
+               shapes = list(type = "line", y0 = 0, y1 = 1, yref = "paper", x0 = median(focal_visits$distance_travelled_m), x1 = median(focal_visits$distance_travelled_m), line = list(color = "black"), text = "median")
         )
-      
     }
     
   }) 
