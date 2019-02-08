@@ -78,7 +78,7 @@ body<-dashboardBody(
                       ),
                       
                       fluidRow(
-                        column(width = 4, 
+                        column(width = 5, 
                                
                                uiOutput("select_taxon_scale")
                         )
