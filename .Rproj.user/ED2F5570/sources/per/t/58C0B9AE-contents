@@ -1,0 +1,85 @@
+##################################
+##### project_folder_setup() #####
+##################################
+#### R function to set up basic directories and documents underlying each project
+project_folder_setup <- function(){
+### Extract the .Rproj project name
+project_name <- strsplit(getwd(), "/")[[1]][length(strsplit(getwd(), "/")[[1]])]
+        
+### Create '.Rprofile' file      
+sink(paste(getwd(), "/.Rprofile", sep = ""))
+cat("##### -- Load packages -- #####
+my_packages <- c(\"dplyr\", \"magrittr\") ### data manipulation
+lapply(my_packages, require, character.only=T)
+
+##### -- Load most recently cached .RData -- #####
+### List all files in cache
+cache_files <- list.files(\"cache\", full.names = TRUE)
+### Isolate dates from files names in cache
+cache_dates <- as.numeric(regmatches(cache_files, gregexpr(\"[[:digit:]]+\", cache_files)))
+### Load most recently cached .RData
+load(cache_files[which(cache_dates == max(cache_dates, na.rm = TRUE))])
+            
+##### -- Write function to chache working directory -- #####
+cache_RData <- function(shorthand = \"processing\"){
+save.image(paste(\"cache/\", shorthand, \"-\", format(Sys.time(), \"%m%d%y\"), \".RData\", sep = \"\"))  
+}
+")
+sink()
+        
+### Create 'data' folder 
+dir.create(paste(getwd(), "/data", sep = ""), showWarnings = FALSE)
+sink(paste(getwd(), "/data/README.txt", sep = ""))
+cat("The 'data' folder stores all raw data files and any associated metadata")
+sink()
+        
+### Create 'cache' folder 
+dir.create(paste(getwd(), "/cache", sep = ""), showWarnings = FALSE)
+sink(paste(getwd(), "/cache/README.txt", sep = ""))
+cat("The 'cache' folder stores .RData sessions that")
+cat("\n")
+cat("(1) are generated during a preprocessing step AND")
+cat("\n")
+cat("(2) don’t need to be regenerated every single time you analyze your data")
+sink()
+        
+### Create 'code' folder 
+dir.create(paste(getwd(), "/code", sep = ""), showWarnings = FALSE)
+sink(paste(getwd(), "/code/README.txt", sep = ""))
+cat("The 'code' or source folder stores all R source code.")
+cat("\n")
+cat("'code' folders include at least two .R files:")
+cat("\n")
+cat("'-analysis.R' is the master script to run all analyses")
+cat("\n")
+cat("'-functions.R' contains the custom R functions necessary to run '-analysis.R'")
+sink()
+sink(paste(getwd(), "/code/", project_name, "-analysis.R", sep = ""))
+sink(paste(getwd(), "/code/", project_name, "-functions.R", sep = ""))
+        
+### Create 'figures' folder 
+dir.create(paste(getwd(), "/figures", sep = ""), showWarnings = FALSE)
+sink(paste(getwd(), "/figures/README.txt", sep = ""))
+cat("The 'figures' folder stores all graphical outputs")
+cat("\n")
+cat("'-figures.R' is the script used to generate any graphical outputs")
+sink()
+sink(paste(getwd(), "/figures/", project_name, "-figures.R", sep = "")) 
+        
+### Create 'docs' folder 
+dir.create(paste(getwd(), "/docs", sep = ""), showWarnings = FALSE)
+sink(paste(getwd(), "/docs/README.txt", sep = ""))
+cat("The 'docs' folder stores all human-readable text-based files (e.g. Word, pdfs)")
+sink()
+        
+### Create 'output' folder 
+dir.create(paste(getwd(), "/output", sep = ""), showWarnings = FALSE)
+sink(paste(getwd(), "/output/README.txt", sep = ""))
+cat("The 'output' folder stores any other files related to the analysis (e.g. data, models, tables, bibliography)")
+sink()
+
+}
+
+#### Run function
+project_folder_setup()
+
